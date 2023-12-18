@@ -240,3 +240,4 @@ cython_debug/
 .idea/
 
 xml_input/*
+!xml_input/.gitkeep
