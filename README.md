@@ -18,19 +18,18 @@ No special installation is required. Just ensure Python 3.x is installed on your
 Before using `payroll_xml_extractor`, ensure Python 3.x is installed on your system. You can download Python from [here](https://www.python.org/downloads/).
 
 ## Usage
-1. Place your XML files in a directory (e.g., `./xml_input`).
-2. Modify the `directory_path` variable in the script to point to your directory of XML files.
-3. Run the script using Python.
-
-```python
-directory_path = './xml_input'
-parsed_data = process_all_xmls(directory_path)
+To run the project, execute the `main.py` script from the root directory. Ensure that your XML files are placed in the `xml_input` directory.
+```bash
+python main.py
 ```
 
-## Functionality
-- `get_namespace(root)`: Extracts the CFDI namespace from the XML root.
-- `parse_xml(file_path)`: Parses an individual XML file, extracting payroll information and formatting it into an SQL insert statement.
-- `process_all_xmls(directory)`: Processes all XML files in a given directory.
+## Project Structure
+- src/:
+  - xml_parser.py: Contains the core functions for parsing the XML files. It includes functions for extracting namespaces, processing individual XML files, and compiling the data into SQL insert statements.
+- xml_input/:
+  - Place your XML files in this directory. These files will be processed by the script.
+- main.py:
+  - The entry point for the application. It calls the functions defined in xml_parser.py to process the XML files.
 
 ## Error Handling
 The script includes basic error handling for file processing and XML parsing issues. Errors are logged to the console with detailed messages to aid in troubleshooting.
@@ -38,6 +37,10 @@ The script includes basic error handling for file processing and XML parsing iss
 ## Limitations
 - Tailored for XML files conforming to specific SAT CFDI versions.
 - Outputs SQL insert statements to the console; modification may be needed for database integration.
+
+## Notes
+- Ensure that the XML files are correctly formatted and adhere to the expected structure for successful parsing.
+- The script currently prints the SQL insert statements to the console. Modify the main.py file if you need to redirect this output to a file or a database.
 
 ## Troubleshooting
 If you encounter issues, check the following:
