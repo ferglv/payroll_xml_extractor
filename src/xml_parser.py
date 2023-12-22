@@ -14,12 +14,14 @@ def get_namespace(root: Element) -> Optional[str]:
     Returns:
         Optional[str]: The extracted namespace string or None if not found.
     """
-    if '}' in root.tag:
-        return root.tag.split('}')[0].strip('{').split('/')[-1]
+    if "}" in root.tag:
+        return root.tag.split("}")[0].strip("{").split("/")[-1]
     return None
 
 
-def extract_emisor_nomina_info(root: Element, namespaces: Dict[str, str]) -> Tuple[str, Optional[Element]]:
+def extract_emisor_nomina_info(
+    root: Element, namespaces: Dict[str, str]
+) -> Tuple[str, Optional[Element]]:
     """
     Extracts common information from 'Emisor' and 'Nomina' nodes in the XML document.
 
@@ -30,13 +32,17 @@ def extract_emisor_nomina_info(root: Element, namespaces: Dict[str, str]) -> Tup
     Returns:
         Tuple[str, Optional[Element]]: A tuple containing the name of the 'Emisor' and the 'Nomina' element.
     """
-    emisor = root.find('cfdi:Emisor', namespaces)
-    emisor_name = emisor.get('Nombre', "Not Found") if emisor is not None else "Not Found"
-    nomina = root.find('.//nomina12:Nomina', namespaces)
+    emisor = root.find("cfdi:Emisor", namespaces)
+    emisor_name = (
+        emisor.get("Nombre", "Not Found") if emisor is not None else "Not Found"
+    )
+    nomina = root.find(".//nomina12:Nomina", namespaces)
     return emisor_name, nomina
 
 
-def parse_deductions(nomina: Optional[Element], namespaces: Dict[str, str]) -> Tuple[str, str]:
+def parse_deductions(
+    nomina: Optional[Element], namespaces: Dict[str, str]
+) -> Tuple[str, str]:
     """
     Parses deduction information from the 'Nomina' node.
 
@@ -48,21 +54,21 @@ def parse_deductions(nomina: Optional[Element], namespaces: Dict[str, str]) -> T
         Tuple[str, str]: The extracted IMSS and ISR deduction amounts.
     """
     if nomina is None:
-        return '0.00', '0.00'
+        return "0.00", "0.00"
 
-    deducciones = nomina.find('nomina12:Deducciones', namespaces)
-    imss = isr = '0.00'
+    deducciones = nomina.find("nomina12:Deducciones", namespaces)
+    imss = isr = "0.00"
     if deducciones:
-        for deduccion in deducciones.findall('nomina12:Deduccion', namespaces):
-            tipo_deduccion = deduccion.get('TipoDeduccion')
-            importe = deduccion.get('Importe', '0.00')
-            if tipo_deduccion == '001':
+        for deduccion in deducciones.findall("nomina12:Deduccion", namespaces):
+            tipo_deduccion = deduccion.get("TipoDeduccion")
+            importe = deduccion.get("Importe", "0.00")
+            if tipo_deduccion == "001":
                 imss = importe
-                if isr != '0.00':
+                if isr != "0.00":
                     break
-            elif tipo_deduccion == '002':
+            elif tipo_deduccion == "002":
                 isr = importe
-                if imss != '0.00':
+                if imss != "0.00":
                     break
     return imss, isr
 
@@ -86,21 +92,31 @@ def parse_xml(file_path: str) -> Optional[str]:
             raise ValueError("CFDI namespace not found in XML")
 
         namespaces = {
-            'cfdi': f'http://www.sat.gob.mx/cfd/{cfdi_version}',
-            'nomina12': 'http://www.sat.gob.mx/nomina12'
+            "cfdi": f"http://www.sat.gob.mx/cfd/{cfdi_version}",
+            "nomina12": "http://www.sat.gob.mx/nomina12",
+            "tfd": "http://www.sat.gob.mx/TimbreFiscalDigital",
         }
 
         emisor_name, nomina = extract_emisor_nomina_info(root, namespaces)
-        position = nomina.find('nomina12:Receptor', namespaces).get('Puesto', "Not Found") if nomina else "Not Found"
-        fecha_inicial_pago = nomina.get('FechaInicialPago', "Not Found") if nomina else "Not Found"
-        fecha_final_pago = nomina.get('FechaFinalPago', "Not Found") if nomina else "Not Found"
-        subtotal = root.get('SubTotal', '0.00')
+        position = (
+            nomina.find("nomina12:Receptor", namespaces).get("Puesto", "Not Found")
+            if nomina
+            else "Not Found"
+        )
+        fecha_inicial_pago = (
+            nomina.get("FechaInicialPago", "Not Found") if nomina else "Not Found"
+        )
+        fecha_final_pago = (
+            nomina.get("FechaFinalPago", "Not Found") if nomina else "Not Found"
+        )
+        subtotal = root.get("SubTotal", "0.00")
 
         imss, isr = parse_deductions(nomina, namespaces)
+        uuid = root.find(".//tfd:TimbreFiscalDigital", namespaces).get("UUID")
 
         insert_statement = f"""
-INSERT INTO income_payroll (start_date, end_date, client, gross_income, imss, isr, position) 
-VALUES ('{fecha_inicial_pago}', '{fecha_final_pago}', '{emisor_name}', {subtotal}, {imss}, {isr}, '{position}');
+INSERT INTO incomes_payroll (start_date, end_date, fiscal_folio, client, position, gross_income, imss, isr)
+VALUES ('{fecha_inicial_pago}', '{fecha_final_pago}', '{uuid}', '{emisor_name}', '{position}', {subtotal}, {imss}, {isr});
 """
         return insert_statement
     except ET.ParseError as e:
@@ -123,7 +139,7 @@ def process_all_xmls(directory: str) -> List[str]:
     """
     all_data = []
     for filename in sorted(os.listdir(directory)):
-        if filename.endswith('.xml'):
+        if filename.endswith(".xml"):
             file_path = os.path.join(directory, filename)
             parsed_data = parse_xml(file_path)
             if parsed_data:

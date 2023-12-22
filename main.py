@@ -5,7 +5,7 @@ def main():
     """
     The main function to process XML files and extract payroll information.
     """
-    directory_path = './xml_input'
+    directory_path = "./xml_input"
     try:
         parsed_data = process_all_xmls(directory_path)
         for data in parsed_data:
